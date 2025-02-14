@@ -20,62 +20,71 @@
         <p id="summary" style="display: none;">กำลังโหลดข้อมูล...</p>
     </div>
 
-    <script>
-        let nickname = "";
-        let answers = [];
-        let questions = [
-            ["I", "E"],
-            ["S", "N"],
-            ["T", "F"],
-            ["J", "P"]
-        ];
-        let index = 0;
+<script>
+    let nickname = "";
+    let answers = [];
+    let questions = [
+        ["I", "E"],
+        ["S", "N"],
+        ["T", "F"],
+        ["J", "P"]
+    ];
+    let index = 0;
 
-        function startQuiz() {
-            nickname = document.getElementById("nickname").value.trim();
-            if (!nickname) {
-                alert("กรุณากรอกชื่อเล่นก่อนเริ่มทำแบบทดสอบ!");
-                return;
-            }
-            document.getElementById("form").style.display = "none";
-            document.getElementById("quiz").style.display = "block";
-            loadQuestion();
+    function startQuiz() {
+        nickname = document.getElementById("nickname").value.trim();
+        if (!nickname) {
+            alert("กรุณากรอกชื่อเล่นก่อนเริ่มทำแบบทดสอบ!");
+            return;
         }
+        document.getElementById("form").style.display = "none";
+        document.getElementById("quiz").style.display = "block";
+        loadQuestion();
+    }
 
-        function loadQuestion() {
-            if (index < questions.length) {
-                document.getElementById("question").innerText = `คุณเป็นแบบไหน?`;
-                document.getElementById("btn1").innerText = questions[index][0];
-                document.getElementById("btn2").innerText = questions[index][1];
-                document.getElementById("summary").style.display = "none";
-            }
+    function loadQuestion() {
+        if (index < questions.length) {
+            document.getElementById("question").innerText = `คุณเป็นแบบไหน? (${index + 1}/4)`;
+            document.getElementById("btn1").innerText = questions[index][0];
+            document.getElementById("btn2").innerText = questions[index][1];
+            document.getElementById("summary").style.display = "none";
         }
+    }
 
-        function answer(choice) {
-            answers.push(questions[index][choice]);
-            index++;
+    async function answer(choice) {
+        if (index >= questions.length) return; // ตรวจสอบไม่ให้ index เกิน
+        answers.push(questions[index][choice]);
+        index++;
 
-            if (index < questions.length) {
-                fetch('https://mbti-jpyk.onrender.com/stats')
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById("summary").innerText = `จำนวนคนที่ตอบคำถามนี้แล้ว: ${data.total}`;
-                        document.getElementById("summary").style.display = "block";
-                        setTimeout(loadQuestion, 2000);
-                    });
-            } else {
-                let mbtiType = answers.join('');
-                fetch('https://mbti-jpyk.onrender.com/submit', {
+        if (index < questions.length) {
+            try {
+                const response = await fetch('https://mbti-jpyk.onrender.com/stats');
+                const data = await response.json();
+                document.getElementById("summary").innerText = `จำนวนคนที่ตอบคำถามนี้แล้ว: ${data.total}`;
+                document.getElementById("summary").style.display = "block";
+                setTimeout(loadQuestion, 2000); // รอ 2 วินาทีแล้วโหลดคำถามใหม่
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+                alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+            }
+        } else {
+            let mbtiType = answers.join('');
+            try {
+                const response = await fetch('https://mbti-jpyk.onrender.com/submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nickname, mbti: mbtiType })
-                }).then(response => response.json())
-                  .then(data => {
-                      alert(`คุณคือ: ${mbtiType} \n\n สถิติ MBTI:\n${JSON.stringify(data.stats, null, 2)}`);
-                      location.reload();
-                  });
+                });
+                const data = await response.json();
+                alert(`คุณคือ: ${mbtiType}\n\nสถิติ MBTI:\n${JSON.stringify(data.stats, null, 2)}`);
+                location.reload();
+            } catch (error) {
+                console.error('Error submitting:', error);
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
             }
         }
-    </script>
+    }
+</script>
+    
 </body>
 </html>
