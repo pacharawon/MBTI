@@ -56,7 +56,7 @@
             index++;
 
             if (index < questions.length) {
-                fetch('/stats')
+                fetch('https://mbti-jpyk.onrender.com/stats')
                     .then(response => response.json())
                     .then(data => {
                         document.getElementById("summary").innerText = `จำนวนคนที่ตอบคำถามนี้แล้ว: ${data.total}`;
