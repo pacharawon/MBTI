@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBTI Quiz</title>
+</head>
+<body>
+    <h2 id="title">ยินดีต้อนรับสู่แบบทดสอบ MBTI</h2>
+    <div id="form">
+        <label for="nickname">กรอกชื่อเล่นของคุณ:</label>
+        <input type="text" id="nickname">
+        <button onclick="startQuiz()">เริ่มทำแบบทดสอบ</button>
+    </div>
+
+    <div id="quiz" style="display: none;">
+        <p id="question">คุณเป็นแบบไหน?</p>
+        <button id="btn1" onclick="answer(0)"></button>
+        <button id="btn2" onclick="answer(1)"></button>
+        <p id="summary" style="display: none;">กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <script>
+        let nickname = "";
+        let answers = [];
+        let questions = [
+            ["I", "E"],
+            ["S", "N"],
+            ["T", "F"],
+            ["J", "P"]
+        ];
+        let index = 0;
+
+        function startQuiz() {
+            nickname = document.getElementById("nickname").value.trim();
+            if (!nickname) {
+                alert("กรุณากรอกชื่อเล่นก่อนเริ่มทำแบบทดสอบ!");
+                return;
+            }
+            document.getElementById("form").style.display = "none";
+            document.getElementById("quiz").style.display = "block";
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (index < questions.length) {
+                document.getElementById("question").innerText = `คุณเป็นแบบไหน?`;
+                document.getElementById("btn1").innerText = questions[index][0];
+                document.getElementById("btn2").innerText = questions[index][1];
+                document.getElementById("summary").style.display = "none";
+            }
+        }
+
+        function answer(choice) {
+            answers.push(questions[index][choice]);
+            index++;
+
+            if (index < questions.length) {
+                fetch('/stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById("summary").innerText = `จำนวนคนที่ตอบคำถามนี้แล้ว: ${data.total}`;
+                        document.getElementById("summary").style.display = "block";
+                        setTimeout(loadQuestion, 2000);
+                    });
+            } else {
+                let mbtiType = answers.join('');
+                fetch('/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nickname, mbti: mbtiType })
+                }).then(response => response.json())
+                  .then(data => {
+                      alert(`คุณคือ: ${mbtiType} \n\n สถิติ MBTI:\n${JSON.stringify(data.stats, null, 2)}`);
+                      location.reload();
+                  });
+            }
+        }
+    </script>
+</body>
+</html>
